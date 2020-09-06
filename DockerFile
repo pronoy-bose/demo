@@ -1,0 +1,30 @@
+#!/bin/bash
+
+FROM alpine:latest AS dbBuilder
+RUN apk add --update sqlite
+RUN mkdir /db
+RUN chmod 777 /db
+WORKDIR /db
+RUN ["sqlite3", "mydb.db", "CREATE TABLE IF NOT EXISTS beers(name VARCHAR(100));", "INSERT INTO beers VALUES ('Stella');"]
+
+FROM openjdk:8
+WORKDIR /app
+RUN chmod 777 /app
+COPY target/demo-0.0.1-SNAPSHOT.jar /app/
+COPY --from=dbBuilder /db /app/
+ENTRYPOINT java $RUNTIME_ARGS -jar demo-0.0.1-SNAPSHOT.jar
+
+#ENTRYPOINT ["sh", "-c", "java $RUNTIME_ARGS -jar demo-0.0.1-SNAPSHOT.jar"]
+#	FROM maven:3.5.2-jdk-8-alpine AS MAVEN_BUILD
+#	COPY pom.xml /build/
+#	COPY src /build/src/
+#
+#	WORKDIR /build/
+#	RUN mvn package
+#
+#	FROM openjdk:8
+#	WORKDIR /app
+#	COPY --from=MAVEN_BUILD /build/target/demo-0.0.1-SNAPSHOT.jar /app/
+#	COPY --from=dbBuilder sqlite /app/
+#
+#	CMD ["sqlite CREATE TABLE IF NOT EXISTS beers(name VARCHAR(100)) && sqlite INSERT INTO beers VALUES ('Stella') && java -jar demo-0.0.1-SNAPSHOT.jar"]
